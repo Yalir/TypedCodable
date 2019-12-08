@@ -26,7 +26,7 @@ private class ClassWrapper<T: ClassFamily, U: Decodable>: Decodable {
     }
 }
 
-extension JSONDecoder {
+public extension JSONDecoder {
     /// Decode a heterogeneous list of objects.
     /// - Parameters:
     ///     - family: The ClassFamily enum type to decode with.
@@ -37,8 +37,12 @@ extension JSONDecoder {
     }
 }
 
-extension NSKeyedUnarchiver {
+public extension NSKeyedUnarchiver {
     func decodeDecodable<T: ClassFamily, U: Decodable>(family: T.Type, forKey key: String) -> [U]? {
         return self.decodeDecodable([ClassWrapper<T, U>].self, forKey: key)?.compactMap { $0.object }
+    }
+    
+    func decodeDecodable<T: ClassFamily, U: Decodable>(family: T.Type, forKey key: String) -> U? {
+        return self.decodeDecodable(ClassWrapper<T, U>.self, forKey: key)?.object
     }
 }
