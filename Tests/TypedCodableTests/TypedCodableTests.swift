@@ -2,7 +2,6 @@ import XCTest
 @testable import TypedCodable
 
 class Pet: TypedCodable {
-    /// The name of the pet.
     let name: String
     
     init(name: String) {
@@ -31,7 +30,6 @@ extension Pet: Equatable {
 }
 
 class Cat: Pet {
-    /// A cat can have a maximum of 9 lives.
     var lives: Int
     
     init(name: String, lives: Int) {
@@ -70,8 +68,6 @@ class Dog: Pet {
     required init(from decoder: Decoder) throws {
         try super.init(from: decoder)
     }
-    
-    func fetch() { /**/ }
 }
 
 /// The PetFamily enum describes the Pet family of objects.
@@ -92,7 +88,7 @@ enum PetFamily: String, ClassFamily {
 }
 
 final class TypedCodableTests: XCTestCase {
-    func testJSON() throws {
+    func testJSONDecoder_decodeHeterogeneousArrayWithoutFamily_Fails() throws {
         let petsJson = """
         [
             { "type": "Cat", "super": { "name": "Garfield" }, "lives": 9 },
@@ -100,20 +96,58 @@ final class TypedCodableTests: XCTestCase {
         ]
         """
 
-        if let petsData = petsJson.data(using: .utf8) {
-            let decoder = JSONDecoder()
-            
-            // Wrongly decoded Pets
-            let pets1 = try? decoder.decode([Pet].self, from: petsData)
-            print("Wrongly decoded pets: \(pets1)") // Prints [Pet, Pet]
-            
-            // Correctly decoded Pets
-            let pets2: [Pet] = try decoder.decode(family: PetFamily.self, from: petsData)
-            print("Correctly decoded pets: \(pets2)") // Prints [Cat, Dog]
-        }
+        let petsData = petsJson.data(using: .utf8)!
+        let decoder = JSONDecoder()
+        
+        // Wrongly decoded Pets
+        XCTAssertNil(try? decoder.decode([Pet].self, from: petsData))
     }
     
-    func testNSArchive() throws {
+    func testJSONDecoder_decodeHeterogeneousArrayWithFamily_Succeeds() throws {
+        let petsJson = """
+        [
+            { "type": "Cat", "super": { "name": "Garfield" }, "lives": 9 },
+            { "type": "Dog", "name": "Pluto" }
+        ]
+        """
+        
+        let petsData = petsJson.data(using: .utf8)!
+        let decoder = JSONDecoder()
+        
+        let expectedPets = [
+            Cat(name: "Garfield", lives: 9),
+            Dog(name: "Pluto")
+        ]
+        
+        let actualPets: [Pet] = try decoder.decode(family: PetFamily.self, from: petsData)
+        XCTAssertEqual(expectedPets, actualPets)
+    }
+    
+    func testNSArchive_decodeSubclassWithoutFamily_Fails() throws {
+        let pet = Cat(name: "Garfield", lives: 9)
+                
+        let petsArchiver = NSKeyedArchiver(requiringSecureCoding: true)
+        try petsArchiver.encodeEncodable(pet, forKey: "Pets")
+                
+        let petsDecoder = try NSKeyedUnarchiver(forReadingFrom: petsArchiver.encodedData)
+        XCTAssertNil(try? petsDecoder.decodeDecodable(Pet.self, forKey: "Pets"))
+    }
+    
+    func testNSArchive_decodeSubclassWithFamily_Succeeds() throws {
+        let encodedPet = Cat(name: "Garfield", lives: 9)
+        let someOtherCat = Cat(name: "Pluto", lives: 5)
+        
+        let petsArchiver = NSKeyedArchiver(requiringSecureCoding: true)
+        try petsArchiver.encodeEncodable(encodedPet, forKey: "Pets")
+        let petsData = petsArchiver.encodedData
+
+        let petsDecoder = try NSKeyedUnarchiver(forReadingFrom: petsData)
+        let decodedPet: Pet? = petsDecoder.decodeDecodable(family: PetFamily.self, forKey: "Pets")
+        XCTAssertEqual(encodedPet, decodedPet)
+        XCTAssertNotEqual(someOtherCat, decodedPet)
+    }
+    
+    func testNSArchive_decodeHeterogeneousArrayWithoutFamily_Fails() throws {
         let pets = [
             Cat(name: "Garfield", lives: 9),
             Dog(name: "Pluto")
@@ -121,16 +155,23 @@ final class TypedCodableTests: XCTestCase {
                 
         let petsArchiver = NSKeyedArchiver(requiringSecureCoding: true)
         try petsArchiver.encodeEncodable(pets, forKey: "Pets")
-        let petsData = petsArchiver.encodedData
                 
-        // Wrongly decoded Pets
-        let petsDecoder1 = try NSKeyedUnarchiver(forReadingFrom: petsData)
-        let pets1 = try? petsDecoder1.decodeDecodable([Pet].self, forKey: "Pets")
-        XCTAssertNil(pets1)
+        let petsDecoder = try NSKeyedUnarchiver(forReadingFrom: petsArchiver.encodedData)
+        XCTAssertNil(try? petsDecoder.decodeDecodable([Pet].self, forKey: "Pets"))
+    }
+    
+    func testNSArchive_decodeHeterogeneousArrayWithFamily_Succeeds() throws {
+        let encodedPets = [
+            Cat(name: "Garfield", lives: 9),
+            Dog(name: "Pluto")
+        ]
+                
+        let petsArchiver = NSKeyedArchiver(requiringSecureCoding: true)
+        try petsArchiver.encodeEncodable(encodedPets, forKey: "Pets")
+        let petsData = petsArchiver.encodedData
 
-        // Correctly decoded Pets
-        let petsDecoder2 = try NSKeyedUnarchiver(forReadingFrom: petsData)
-        let pets2: [Pet]? = petsDecoder2.decodeDecodable(family: PetFamily.self, forKey: "Pets")
-        XCTAssertEqual(pets, pets2)
+        let petsDecoder = try NSKeyedUnarchiver(forReadingFrom: petsData)
+        let decodedPets: [Pet]? = petsDecoder.decodeDecodableArray(family: PetFamily.self, forKey: "Pets")
+        XCTAssertEqual(encodedPets, decodedPets)
     }
 }

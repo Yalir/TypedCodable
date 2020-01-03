@@ -38,7 +38,7 @@ public extension JSONDecoder {
 }
 
 public extension NSKeyedUnarchiver {
-    func decodeDecodable<T: ClassFamily, U: Decodable>(family: T.Type, forKey key: String) -> [U]? {
+    func decodeDecodableArray<T: ClassFamily, U: Decodable>(family: T.Type, forKey key: String) -> [U]? {
         return self.decodeDecodable([ClassWrapper<T, U>].self, forKey: key)?.compactMap { $0.object }
     }
     
