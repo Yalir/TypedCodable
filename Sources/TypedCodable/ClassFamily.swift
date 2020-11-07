@@ -1,3 +1,9 @@
+//
+//  ClassFamily.swift
+//
+//
+//  Created by Ceylo on 08/12/2019.
+//
 
 import Foundation
 
@@ -14,4 +20,3 @@ public protocol ClassFamily: Decodable {
 public enum Discriminator: String, CodingKey {
     case type
 }
-
