@@ -33,16 +33,16 @@ public extension JSONDecoder {
     ///     - data: The data to decode.
     /// - Returns: The list of decoded objects.
     func decode<T: ClassFamily, U: Decodable>(family: T.Type, from data: Data) throws -> [U] {
-        return try self.decode([ClassWrapper<T, U>].self, from: data).compactMap { $0.object }
+        try self.decode([ClassWrapper<T, U>].self, from: data).compactMap { $0.object }
     }
 }
 
 public extension NSKeyedUnarchiver {
     func decodeDecodableArray<T: ClassFamily, U: Decodable>(family: T.Type, forKey key: String) -> [U]? {
-        return self.decodeDecodable([ClassWrapper<T, U>].self, forKey: key)?.compactMap { $0.object }
+        self.decodeDecodable([ClassWrapper<T, U>].self, forKey: key)?.compactMap { $0.object }
     }
     
     func decodeDecodable<T: ClassFamily, U: Decodable>(family: T.Type, forKey key: String) -> U? {
-        return self.decodeDecodable(ClassWrapper<T, U>.self, forKey: key)?.object
+        self.decodeDecodable(ClassWrapper<T, U>.self, forKey: key)?.object
     }
 }
