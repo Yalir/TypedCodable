@@ -130,7 +130,7 @@ final class TypedCodableTests: XCTestCase {
         try petsArchiver.encodeEncodable(pet, forKey: "Pets")
                 
         let petsDecoder = try NSKeyedUnarchiver(forReadingFrom: petsArchiver.encodedData)
-        XCTAssertNil(try? petsDecoder.decodeDecodable(Pet.self, forKey: "Pets"))
+        XCTAssertNil(petsDecoder.decodeDecodable(Pet.self, forKey: "Pets"))
     }
     
     func testNSArchive_decodeSubclassWithFamily_Succeeds() throws {
@@ -157,7 +157,7 @@ final class TypedCodableTests: XCTestCase {
         try petsArchiver.encodeEncodable(pets, forKey: "Pets")
                 
         let petsDecoder = try NSKeyedUnarchiver(forReadingFrom: petsArchiver.encodedData)
-        XCTAssertNil(try? petsDecoder.decodeDecodable([Pet].self, forKey: "Pets"))
+        XCTAssertNil(petsDecoder.decodeDecodable([Pet].self, forKey: "Pets"))
     }
     
     func testNSArchive_decodeHeterogeneousArrayWithFamily_Succeeds() throws {
